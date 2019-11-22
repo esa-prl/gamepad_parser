@@ -12,13 +12,23 @@ class GamepadParser(Node):
         self.node_name = 'gamepad_parser_node'
         super().__init__(self.node_name)
 
+        # Init Params
+        self.init_params()
+
         # Create Publishers
         self.rover_motion_cmd_pub_ = self.create_publisher(Twist, 'rover_motion_cmd', 10)
+        
+        # Request Locomotion Mode Service
+        # self.change_locomotion_mode_cli_ = self.create_client(ChangeLocomotionMode, 'change_locomotion_mode', 10)
 
         # Create Subscriptions
         self.create_subscription(Joy, 'gamepad', self.gamepad_callback, 10)
  
         self.get_logger().info('{} started.'.format(self.node_name))
+
+    def init_params(self):
+        self.send_stop_command = False
+
 
     def gamepad_callback(self, data):
         ## HANDLE BUTTONS
@@ -34,26 +44,39 @@ class GamepadParser(Node):
             self.get_logger().info('BACK PRESSED')
 
         ## HANDLE AXES
-        # Compute Left joystick heading angle
-        self.get_logger().info('Axes: {} {}'.format(data.axes[0], data.axes[1]))
+        # Check if any rover velocities axis are pressed and send command
+        if data.axes[0] != 0.0 or data.axes[1] != 0.0 or data.axes[2] != 0.0:
 
-        if (abs(data.axes[0])+abs(data.axes[1])) > 0:
-            # if math.sqrt(pow(data.axes[0],2) + pow(data.axes[1],2)) > 0.8:
-                # self.yaw_goal = math.atan2(data.axes[0],data.axes[1])*180/math.pi
-            self.get_logger().info('Publishing stuff')
-
+            self.get_logger().info('ROVER_MOTION_CMD_MSG_SENT!')
 
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
-            rover_motion_cmd_msg.linear.x = 0.0
-            rover_motion_cmd_msg.linear.y = 1.0
-            rover_motion_cmd_msg.linear.z = 2.0
+            rover_motion_cmd_msg.linear.x = data.axes[0]
+            rover_motion_cmd_msg.linear.y = -data.axes[1]
+            rover_motion_cmd_msg.linear.z = 0.0
             
-            rover_motion_cmd_msg.angular.x = 1.0
-            rover_motion_cmd_msg.angular.y = 2.0
-            rover_motion_cmd_msg.angular.z = 3.0
+            rover_motion_cmd_msg.angular.x = 0.0
+            rover_motion_cmd_msg.angular.y = 0.0
+            rover_motion_cmd_msg.angular.z = data.axes[2]
 
             self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
+            self.send_stop_command = True
+
+        # TODO: Check if it could be done nicer than with the stop command.
+        elif self.send_stop_command:
+            # Fill rover_motion_cmd message
+            rover_motion_cmd_msg = Twist()
+            rover_motion_cmd_msg.linear.x = 0.0
+            rover_motion_cmd_msg.linear.y = 0.0
+            rover_motion_cmd_msg.linear.z = 0.0
+            
+            rover_motion_cmd_msg.angular.x = 0.0
+            rover_motion_cmd_msg.angular.y = 0.0
+            rover_motion_cmd_msg.angular.z = 0.0
+
+            self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
+            self.send_stop_command = False
+
     
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
