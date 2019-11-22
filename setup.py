@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'gamepad_parser_node = gamepad_parser.gamepad_parser:main'
         ],
     },
 )
