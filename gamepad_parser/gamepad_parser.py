@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from simple_rover_locomotion.srv import ChangeLocomotionMode
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
@@ -19,7 +20,9 @@ class GamepadParser(Node):
         self.rover_motion_cmd_pub_ = self.create_publisher(Twist, 'rover_motion_cmd', 10)
         
         # Request Locomotion Mode Service
-        # self.change_locomotion_mode_cli_ = self.create_client(ChangeLocomotionMode, 'change_locomotion_mode', 10)
+        self.change_locomotion_mode_cli_ = self.create_client(ChangeLocomotionMode,'change_locomotion_mode')
+        self.request = ChangeLocomotionMode.Request()
+        self.client_futures = []
 
         # Create Subscriptions
         self.create_subscription(Joy, 'gamepad', self.gamepad_callback, 10)
@@ -37,6 +40,11 @@ class GamepadParser(Node):
         # Dis- or enable motors
         if data.buttons[9]: # START Key
             self.get_logger().info('START PRESSED')
+
+            self.request.locomotion_mode = 'WHEELWALKING'
+
+            self.add_request_to_queue(self.request)
+
 
 
         # Reset setpoint angle
@@ -77,7 +85,26 @@ class GamepadParser(Node):
             self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
             self.send_stop_command = False
 
-    
+    def add_request_to_queue(self, request):
+
+        self.get_logger().info('Added Request to queue')
+        self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
+
+
+    def spin(self):
+        while rclpy.ok():
+            rclpy.spin_once(self)
+            incomplete_futures = []
+            for f in self.client_futures:
+                if f.done():
+                    res = f.result()
+                else:
+                    incomplete_futures.append(f)
+
+
+            self.client_futures = incomplete_futures
+            self.get_logger().info('Client Futures Size: {}'.format(len(self.client_futures)))
+
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
 
@@ -87,7 +114,7 @@ def main(args=None):
 
     gamepad_parser = GamepadParser()
 
-    rclpy.spin(gamepad_parser)
+    gamepad_parser.spin()
 
     gamepad_parser.stop()
     # Destroy the node explicitly
