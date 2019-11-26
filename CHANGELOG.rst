@@ -4,7 +4,7 @@ Changelog for package gamepad_parser
 
 TODO
 ----
-* add service to request locomotion mode change
+* process response from service
 * add posibility to change speed of velocities
 * add functions to buttons
 
@@ -17,4 +17,5 @@ KNOWN BUGS
 
 0.0.1 (2019-11-22)
 ------------------
+* add service to request locomotion mode change
 * publishing and subscribing works

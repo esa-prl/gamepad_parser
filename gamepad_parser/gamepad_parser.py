@@ -45,8 +45,6 @@ class GamepadParser(Node):
 
             self.add_request_to_queue(self.request)
 
-
-
         # Reset setpoint angle
         if data.buttons[8]: # BACK Key
             self.get_logger().info('BACK PRESSED')
@@ -86,10 +84,11 @@ class GamepadParser(Node):
             self.send_stop_command = False
 
     def add_request_to_queue(self, request):
-
-        self.get_logger().info('Added Request to queue')
         self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
 
+    def parse_future_result(self, future):
+        # print(future.request())
+        print(future.result().response)
 
     def spin(self):
         while rclpy.ok():
@@ -98,12 +97,13 @@ class GamepadParser(Node):
             for f in self.client_futures:
                 if f.done():
                     res = f.result()
+                    self.parse_future_result(f)
                 else:
                     incomplete_futures.append(f)
 
-
+            # self.get_logger().warn('{} incomplete futures.'.format(len(incomplete_futures)))
+            
             self.client_futures = incomplete_futures
-            self.get_logger().info('Client Futures Size: {}'.format(len(self.client_futures)))
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
