@@ -30,16 +30,21 @@ class GamepadParser(Node):
         self.get_logger().info('{} started.'.format(self.node_name))
 
     def init_params(self):
-        self.send_stop_command = False
+        self.prev_data = Joy()
 
 
     def gamepad_callback(self, data):
         ## HANDLE BUTTONS
-        # Handle Thrusters
+
+        # Check if button message has changed:
+        if data.buttons == self.prev_data.buttons and data.axes == self.prev_data.axes:
+            return
+        else:
+            self.prev_data = data
 
         # Dis- or enable motors
         if data.buttons[9]: # START Key
-            self.get_logger().info('START PRESSED')
+            self.get_logger().debug('START PRESSED')
 
             self.request.locomotion_mode = 'WHEELWALKING'
 
@@ -47,13 +52,13 @@ class GamepadParser(Node):
 
         # Reset setpoint angle
         if data.buttons[8]: # BACK Key
-            self.get_logger().info('BACK PRESSED')
+            self.get_logger().debug('BACK PRESSED')
 
         ## HANDLE AXES
         # Check if any rover velocities axis are pressed and send command
         if data.axes[0] != 0.0 or data.axes[1] != 0.0 or data.axes[2] != 0.0:
 
-            self.get_logger().info('ROVER_MOTION_CMD_MSG_SENT!')
+            self.get_logger().debug('ROVER_MOTION_CMD_MSG_SENT!')
 
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
@@ -68,20 +73,6 @@ class GamepadParser(Node):
             self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
             self.send_stop_command = True
 
-        # TODO: Check if it could be done nicer than with the stop command.
-        elif self.send_stop_command:
-            # Fill rover_motion_cmd message
-            rover_motion_cmd_msg = Twist()
-            rover_motion_cmd_msg.linear.x = 0.0
-            rover_motion_cmd_msg.linear.y = 0.0
-            rover_motion_cmd_msg.linear.z = 0.0
-            
-            rover_motion_cmd_msg.angular.x = 0.0
-            rover_motion_cmd_msg.angular.y = 0.0
-            rover_motion_cmd_msg.angular.z = 0.0
-
-            self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
-            self.send_stop_command = False
 
     def add_request_to_queue(self, request):
         self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
