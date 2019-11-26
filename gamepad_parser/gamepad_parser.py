@@ -32,6 +32,16 @@ class GamepadParser(Node):
     def init_params(self):
         self.prev_data = Joy()
 
+        # TODO: Find ratio that leads to realistic velocity values
+        # Ratio from Joystick scalar to linear and angular velocities
+        self.linear_speed_ratio = 0.5
+        self.angular_speed_ratio = 0.5
+
+        # Scaling with which the speed ratio can be changed during operations.
+        # 0.1 = 10% increase, and reduction to 90% of previous value
+        self.linear_speed_ratio_scaling = 0.1
+        self.angular_speed_ratio_scaling = 0.1
+
 
     def gamepad_callback(self, data):
         ## HANDLE BUTTONS
@@ -42,17 +52,34 @@ class GamepadParser(Node):
         else:
             self.prev_data = data
 
-        # Dis- or enable motors
-        if data.buttons[9]: # START Key
+        if data.buttons[3]: # START Key
             self.get_logger().debug('START PRESSED')
 
-            self.request.locomotion_mode = 'WHEELWALKING'
+            self.request.locomotion_mode = 'TEST MODE'
 
             self.add_request_to_queue(self.request)
 
-        # Reset setpoint angle
         if data.buttons[8]: # BACK Key
             self.get_logger().debug('BACK PRESSED')
+
+        ## Velocity Scaling
+        # LB
+        if data.buttons[4]:
+            self.linear_speed_ratio = self.linear_speed_ratio * (1 + self.linear_speed_ratio_scaling)
+
+        # LT
+        if data.buttons[6]:
+            self.linear_speed_ratio = self.linear_speed_ratio * (1 - self.linear_speed_ratio_scaling)
+
+        # RB
+        if data.buttons[5]:
+            self.angular_speed_ratio = self.angular_speed_ratio * (1 + self.angular_speed_ratio_scaling)
+
+        # RT
+        if data.buttons[7]:
+            self.angular_speed_ratio = self.angular_speed_ratio * (1 - self.angular_speed_ratio_scaling)
+
+
 
         ## HANDLE AXES
         # Check if any rover velocities axis are pressed and send command
@@ -62,13 +89,13 @@ class GamepadParser(Node):
 
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
-            rover_motion_cmd_msg.linear.x = data.axes[0]
-            rover_motion_cmd_msg.linear.y = -data.axes[1]
+            rover_motion_cmd_msg.linear.x = data.axes[0] * self.linear_speed_ratio
+            rover_motion_cmd_msg.linear.y = -data.axes[1]* self.linear_speed_ratio
             rover_motion_cmd_msg.linear.z = 0.0
             
             rover_motion_cmd_msg.angular.x = 0.0
             rover_motion_cmd_msg.angular.y = 0.0
-            rover_motion_cmd_msg.angular.z = data.axes[2]
+            rover_motion_cmd_msg.angular.z = data.axes[2] * self.angular_speed_ratio
 
             self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
             self.send_stop_command = True
