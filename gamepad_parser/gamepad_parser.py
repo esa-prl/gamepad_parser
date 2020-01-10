@@ -86,11 +86,11 @@ class GamepadParser(Node):
 
         ### HANDLE AXES
         ## Steering
-        if self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2):
+        if self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
-            rover_motion_cmd_msg.linear.x = data.axes[0] * self.linear_speed_ratio
-            rover_motion_cmd_msg.linear.y = -data.axes[1]* self.linear_speed_ratio
+            rover_motion_cmd_msg.linear.x = data.axes[1] * self.linear_speed_ratio
+            rover_motion_cmd_msg.linear.y = data.axes[0]* self.linear_speed_ratio
             rover_motion_cmd_msg.linear.z = 0.0
             
             rover_motion_cmd_msg.angular.x = 0.0
@@ -140,6 +140,13 @@ class GamepadParser(Node):
 
     def button_pressed(self, index):
         return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
+
+    def any_button_pressed(self, buttons_index):
+        for index in buttons_index:
+            if self.button_pressed(index):
+                return True
+
+        return False
 
     def axis_changed(self, index):
         # print(self.prev_data.axes[index] != self.curr_data.axes[index])
