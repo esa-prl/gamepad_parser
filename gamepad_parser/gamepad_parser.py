@@ -2,7 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
-from simple_rover_locomotion.srv import ChangeLocomotionMode
+from rover_msgs.srv import ChangeLocomotionMode
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
