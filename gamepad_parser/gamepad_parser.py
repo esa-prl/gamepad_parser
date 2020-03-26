@@ -10,6 +10,7 @@ from sensor_msgs.msg import Joy
 class GamepadParser(Node):
 
     def __init__(self):
+        # Init Node
         self.node_name = 'gamepad_parser_node'
         super().__init__(self.node_name)
 
@@ -32,6 +33,9 @@ class GamepadParser(Node):
 
     def init_params(self):
         self.prev_data = Joy()
+
+        # Percentage of deadzone in which no axis change is being considered. [0, 1]
+        self.deadzone_r = 0.2
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
@@ -148,9 +152,10 @@ class GamepadParser(Node):
 
         return False
 
+    # Compares current axis reading with previous axis reading
+    # Only applies if joystick is outside of the deadzone
     def axis_changed(self, index):
-        # print(self.prev_data.axes[index] != self.curr_data.axes[index])
-        return self.prev_data.axes[index] != self.curr_data.axes[index]
+        return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone_r
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))

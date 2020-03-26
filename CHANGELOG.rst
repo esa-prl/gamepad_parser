@@ -15,8 +15,9 @@ KNOWN BUGS
 ----------
 
 
-0.0.1 (2019-11-22)
+0.0.1 (unreleased)
 ------------------
+* implemented deadzone
 * adjusting the speed ratio while driving now updates the rover velocities
 * added ptu commands
 * add posibility to change max linear and angular veloctities of rover with the joystick
