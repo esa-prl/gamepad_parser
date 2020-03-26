@@ -64,7 +64,8 @@ class GamepadParser(Node):
         if self.button_pressed(3): # Y
             self.get_logger().info('Y PRESSED')
 
-            self.request.locomotion_mode = 'TEST MODE'
+            # Services requests are added to the service queue
+            self.request.new_locomotion_mode = 'TEST MODE'
             self.add_request_to_queue(self.request)
 
         if self.button_pressed(8): # BACK Key
@@ -131,6 +132,7 @@ class GamepadParser(Node):
     def spin(self):
         while rclpy.ok():
             rclpy.spin_once(self)
+            # Necessary to call the services after the spin so they can resolve. If they don't, then they are added to a queue and tried the next time.
             incomplete_futures = []
             for f in self.client_futures:
                 if f.done():

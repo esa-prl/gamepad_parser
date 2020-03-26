@@ -4,6 +4,7 @@ Changelog for package gamepad_parser
 
 TODO
 ----
+* Streamline and clarify how service calls are done and handled.
 * load parameters from config file
 * process response from service
 * add functions to buttons
