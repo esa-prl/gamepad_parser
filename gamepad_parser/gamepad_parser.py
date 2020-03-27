@@ -35,7 +35,11 @@ class GamepadParser(Node):
         self.prev_data = Joy()
 
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
-        self.deadzone_r = 0.2
+        self.declare_parameter('deadzone')
+        self.deadzone = self.get_parameter('deadzone').value
+        self.get_logger().error("Deadzone: {}".format(self.deadzone))
+
+        # self.deadzone = 0.2
 
         self.continuos_data_streaming = True
 
@@ -160,9 +164,9 @@ class GamepadParser(Node):
     def handle_axis(self, index):
         # Check if data should be streamed at all times or only if it changed.
         if self.continuos_data_streaming:
-            return abs(self.curr_data.axes[index]) >= self.deadzone_r
+            return abs(self.curr_data.axes[index]) >= self.deadzone
         else:
-            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone_r
+            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
