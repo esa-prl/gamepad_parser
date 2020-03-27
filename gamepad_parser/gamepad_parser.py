@@ -37,6 +37,8 @@ class GamepadParser(Node):
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
         self.deadzone_r = 0.2
 
+        self.continuos_data_streaming = True
+
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
         self.linear_speed_ratio = 0.5
@@ -91,7 +93,7 @@ class GamepadParser(Node):
 
         ### HANDLE AXES
         ## Steering
-        if self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
+        if self.handle_axis(0) or self.handle_axis(1) or self.handle_axis(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
             rover_motion_cmd_msg.linear.x = data.axes[1] * self.linear_speed_ratio
@@ -106,7 +108,7 @@ class GamepadParser(Node):
             self.get_logger().debug('ROVER_MOTION_CMD_MSG SENT!')
 
         ## PTU
-        if self.axis_changed(4) or self.axis_changed(5):
+        if self.handle_axis(4) or self.handle_axis(5):
             # Fill ptu_cmd message
             ptu_cmd_msg = Twist()
             ptu_cmd_msg.linear.x = 0.0
@@ -151,13 +153,16 @@ class GamepadParser(Node):
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
-
         return False
 
     # Compares current axis reading with previous axis reading
     # Only applies if joystick is outside of the deadzone
-    def axis_changed(self, index):
-        return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone_r
+    def handle_axis(self, index):
+        # Check if data should be streamed at all times or only if it changed.
+        if self.continuos_data_streaming:
+            return abs(self.curr_data.axes[index]) >= self.deadzone_r
+        else:
+            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone_r
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
