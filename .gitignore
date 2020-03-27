@@ -1,2 +1,3 @@
 *.pyc
- simple_joint_simulation/__pycache__/*
+*.cpython-36.pyc
+gamepad_parser/__pycache__/*
