@@ -9,6 +9,7 @@ from sensor_msgs.msg import Joy
 
 class GamepadParser(Node):
 
+
     def __init__(self):
         # Init Node
         self.node_name = 'gamepad_parser_node'
@@ -31,11 +32,12 @@ class GamepadParser(Node):
  
         self.get_logger().info('\t{} STARTED.'.format(self.node_name.upper()))
 
+
     def init_params(self):
         self.prev_data = Joy()
 
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
-        self.deadzone_r = 0.2
+        self.deadzone = 0.2
 
         self.continuos_data_streaming = True
 
@@ -52,8 +54,8 @@ class GamepadParser(Node):
         self.ptu_pan_speed_ratio = 0.5
         self.ptu_tilt_speed_ratio = 0.5
 
-    def gamepad_callback(self, data):
 
+    def gamepad_callback(self, data):
         self.curr_data = data
 
         # Initialize the prev_data message the first time.
@@ -125,12 +127,17 @@ class GamepadParser(Node):
         self.prev_data = data
 
 
+    # Add a call to the futures list, which is checked after each spin.
     def add_request_to_queue(self, request):
         self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
 
+
+    # Do something with the response of the service callback
     def parse_future_result(self, future):
         print(future.result().response)
 
+
+    # Define custom spin function, that checks if the service calls resolved after each spin.
     def spin(self):
         while rclpy.ok():
             rclpy.spin_once(self)
@@ -146,23 +153,28 @@ class GamepadParser(Node):
             # self.get_logger().warn('{} incomplete futures.'.format(len(incomplete_futures)))
             self.client_futures = incomplete_futures
 
+
+    # Check if a button was pressed by comparing it's current state to it's previous state
     def button_pressed(self, index):
         return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
 
+
+    # Check if a button from the supplied index selection is pressed.
     def any_button_pressed(self, buttons_index):
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
         return False
 
+
     # Compares current axis reading with previous axis reading
     # Only applies if joystick is outside of the deadzone
     def handle_axis(self, index):
         # Check if data should be streamed at all times or only if it changed.
         if self.continuos_data_streaming:
-            return abs(self.curr_data.axes[index]) >= self.deadzone_r
+            return abs(self.curr_data.axes[index]) >= self.deadzone
         else:
-            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone_r
+            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
