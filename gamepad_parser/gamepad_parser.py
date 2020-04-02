@@ -9,6 +9,7 @@ from sensor_msgs.msg import Joy
 
 class GamepadParser(Node):
 
+
     def __init__(self):
         # Init Node
         self.node_name = 'gamepad_parser_node'
@@ -31,6 +32,7 @@ class GamepadParser(Node):
  
         self.get_logger().info('\t{} STARTED.'.format(self.node_name.upper()))
 
+
     def init_params(self):
         self.prev_data = Joy()
 
@@ -40,7 +42,6 @@ class GamepadParser(Node):
         self.get_logger().error("Deadzone: {}".format(self.deadzone))
 
         # self.deadzone = 0.2
-
         self.continuos_data_streaming = True
 
         # TODO: Find ratio that leads to realistic velocity values
@@ -56,8 +57,8 @@ class GamepadParser(Node):
         self.ptu_pan_speed_ratio = 0.5
         self.ptu_tilt_speed_ratio = 0.5
 
-    def gamepad_callback(self, data):
 
+    def gamepad_callback(self, data):
         self.curr_data = data
 
         # Initialize the prev_data message the first time.
@@ -129,12 +130,17 @@ class GamepadParser(Node):
         self.prev_data = data
 
 
+    # Add a call to the futures list, which is checked after each spin.
     def add_request_to_queue(self, request):
         self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
 
-    def parse_future_result(self, future):
-        print(future.result().response)
 
+    # Do something with the response of the service callback
+    def parse_future_result(self, result):
+        print(result.response)
+
+
+    # Define custom spin function, that checks if the service calls resolved after each spin.
     def spin(self):
         while rclpy.ok():
             rclpy.spin_once(self)
@@ -142,22 +148,32 @@ class GamepadParser(Node):
             incomplete_futures = []
             for f in self.client_futures:
                 if f.done():
-                    res = f.result()
-                    self.parse_future_result(f)
+                    try:
+                        res = f.result()
+                    except Exception as e:
+                        self.get_logger().warn('Service Call to ChangeLocomotionMode failed {}.'.format(e))
+                    else:
+                        self.parse_future_result(res)
+
                 else:
                     incomplete_futures.append(f)
 
             # self.get_logger().warn('{} incomplete futures.'.format(len(incomplete_futures)))
             self.client_futures = incomplete_futures
 
+
+    # Check if a button was pressed by comparing it's current state to it's previous state
     def button_pressed(self, index):
         return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
 
+
+    # Check if a button from the supplied index selection is pressed.
     def any_button_pressed(self, buttons_index):
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
         return False
+
 
     # Compares current axis reading with previous axis reading
     # Only applies if joystick is outside of the deadzone
