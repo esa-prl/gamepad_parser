@@ -1,4 +1,4 @@
-# Gamepad_Parser
+# Gamepad Parser
 
 ## Overview
 
@@ -14,7 +14,7 @@ The source code is released under a [TODO: Add Licence]()).
 Affiliation: [European Space Agency](https://www.esa.int/)<br />
 Maintainer: Miro Voellmy, miro.voellmy@esa.com**
 
-The gamepad_parser package has been tested under [ROS2] Eloquent and Ubuntu 18.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
+The Gamepad Parser package has been tested under [ROS2] Eloquent and Ubuntu 18.04. This is research code, expect that it changes often and any fitness for a particular purpose is disclaimed.
 
 ## Installation
 
@@ -23,11 +23,11 @@ The gamepad_parser package has been tested under [ROS2] Eloquent and Ubuntu 18.0
 #### Dependencies
 
 - [Robot Operating System (ROS)](http://wiki.ros.org) (middleware for robotics),
-- ([rover_msgs]) (message definitions for ESA-PRL rovers)
+- [rover_msgs] (message definitions for ESA-PRL rovers)
 
 #### Building
 
-To build from source, clone the latest version from this repository into your catkin workspace and compile the package using
+To build from source, clone the latest version from this repository into your ros2 workspace and compile the package using
 
 	cd ros2_ws/src
 	git clone https://github.com/esa-prl/gamepad_parser.git

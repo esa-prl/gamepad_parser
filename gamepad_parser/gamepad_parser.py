@@ -133,8 +133,8 @@ class GamepadParser(Node):
 
 
     # Do something with the response of the service callback
-    def parse_future_result(self, future):
-        print(future.result().response)
+    def parse_future_result(self, result):
+        print(result.response)
 
 
     # Define custom spin function, that checks if the service calls resolved after each spin.
@@ -145,8 +145,13 @@ class GamepadParser(Node):
             incomplete_futures = []
             for f in self.client_futures:
                 if f.done():
-                    res = f.result()
-                    self.parse_future_result(f)
+                    try:
+                        res = f.result()
+                    except Exception as e:
+                        self.get_logger().warn('Service Call to ChangeLocomotionMode failed {}.'.format(e))
+                    else:
+                        self.parse_future_result(res)
+
                 else:
                     incomplete_futures.append(f)
 
