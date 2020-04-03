@@ -1,4 +1,5 @@
 # Nodename
 gamepad_parser_node:
   ros__parameters:
-    deadzone: 0.2
+    deadzone: 0.3
+    continuous_data_streaming: true

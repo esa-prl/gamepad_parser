@@ -9,12 +9,16 @@ import tempfile
 
 namespace_ = 'marta'
 
+ros2_ws_src = '/home/freki/rover_wss/ros2_ws/src'
 
 def generate_launch_description():
-
     ## Individual Parameter files
-    gamepad_parser_dir = get_package_share_directory('gamepad_parser')
-    gamepad_parser_config = os.path.join(gamepad_parser_dir, 'gamepad_parser.yaml')
+    # Loading it from the install space
+    # gamepad_parser_dir = get_package_share_directory('gamepad_parser')
+    # gamepad_parser_config = os.path.join(gamepad_parser_dir, 'gamepad_parser.yaml')
+
+    gamepad_parser_dir = os.path.join(ros2_ws_src, 'gamepad_parser')
+    gamepad_parser_config = os.path.join(gamepad_parser_dir, 'config', 'gamepad_parser.yaml')
 
     ## Add namespace to the yaml file
     gamepad_parser_config_ns = add_namespace_to_yaml(namespace_, gamepad_parser_config)

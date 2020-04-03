@@ -8,7 +8,7 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 
 class GamepadParser(Node):
-
+## TODO: pass "allow undeclared parameters" making the parameter init easier
 
     def __init__(self):
         # Init Node
@@ -38,11 +38,20 @@ class GamepadParser(Node):
 
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
         self.declare_parameter('deadzone')
-        self.deadzone = self.get_parameter('deadzone').value
-        self.get_logger().error("Deadzone: {}".format(self.deadzone))
+        self.declare_parameter('continuous_data_streaming')
 
-        # self.deadzone = 0.2
-        self.continuos_data_streaming = True
+        self.deadzone = self.get_parameter('deadzone').value
+        self.continuous_data_streaming = self.get_parameter('continuous_data_streaming').value
+
+        if self.deadzone == None:
+            # TODO: There should be a better way to have a default value
+            self.deadzone = 0.2
+            self.get_logger().warn('Deadzone was not declared. Used default value {} instead.'.format(self.deadzone))
+
+        if self.continuous_data_streaming == None:
+            self.continuous_data_streaming = True
+            self.get_logger().warn('continuos_data_streaming was not declared. Used default value {} instead.'.format(self.continuous_data_streaming))
+
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
@@ -179,7 +188,7 @@ class GamepadParser(Node):
     # Only applies if joystick is outside of the deadzone
     def handle_axis(self, index):
         # Check if data should be streamed at all times or only if it changed.
-        if self.continuos_data_streaming:
+        if self.continuous_data_streaming:
             return abs(self.curr_data.axes[index]) >= self.deadzone
         else:
             return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone
