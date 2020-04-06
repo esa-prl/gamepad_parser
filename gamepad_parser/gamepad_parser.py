@@ -19,14 +19,14 @@ class GamepadParser(Node):
         self.init_params()
 
         # Create Publishers
-        self.rover_motion_cmd_pub_ = self.create_publisher(Twist, 'rover_motion_cmd', 10)
-        self.ptu_cmd_pub_ = self.create_publisher(Twist, 'ptu_cmd', 10)
+        self.rover_motion_cmd_pub = self.create_publisher(Twist, 'rover_motion_cmd', 10)
+        self.ptu_cmd_pub = self.create_publisher(Twist, 'ptu_cmd', 10)
         
         # Create Subscriptions
         self.create_subscription(Joy, 'gamepad', self.gamepad_callback, 10)
 
         # Request Locomotion Mode Service
-        self.change_locomotion_mode_cli_ = self.create_client(ChangeLocomotionMode,'change_locomotion_mode')
+        self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode,'change_locomotion_mode')
         self.request = ChangeLocomotionMode.Request()
         self.client_futures = []
  
@@ -43,15 +43,14 @@ class GamepadParser(Node):
         self.deadzone = self.get_parameter('deadzone').value
         self.continuous_data_streaming = self.get_parameter('continuous_data_streaming').value
 
+        # TODO: There should be a better way to have a default value
         if self.deadzone == None:
-            # TODO: There should be a better way to have a default value
             self.deadzone = 0.2
             self.get_logger().warn('Deadzone was not declared. Used default value {} instead.'.format(self.deadzone))
 
         if self.continuous_data_streaming == None:
             self.continuous_data_streaming = True
             self.get_logger().warn('continuos_data_streaming was not declared. Used default value {} instead.'.format(self.continuous_data_streaming))
-
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
@@ -69,6 +68,12 @@ class GamepadParser(Node):
 
     def gamepad_callback(self, data):
         self.curr_data = data
+        
+        # Apply Deadzone to axis
+        for index, axis in enumerate(self.curr_data.axes):
+            # Sets axis value to 0 if it's
+            if abs(axis) <= self.deadzone:
+                self.curr_data.axes[index] = 0
 
         # Initialize the prev_data message the first time.
         if len(self.prev_data.buttons) == 0 or len(self.prev_data.axes) == 0:
@@ -107,7 +112,7 @@ class GamepadParser(Node):
 
         ### HANDLE AXES
         ## Steering
-        if self.handle_axis(0) or self.handle_axis(1) or self.handle_axis(2) or self.any_button_pressed([4, 5, 6, 7]):
+        if self.continuous_data_streaming or self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
             rover_motion_cmd_msg.linear.x = data.axes[1] * self.linear_speed_ratio
@@ -118,11 +123,11 @@ class GamepadParser(Node):
             rover_motion_cmd_msg.angular.y = 0.0
             rover_motion_cmd_msg.angular.z = data.axes[2] * self.angular_speed_ratio
 
-            self.rover_motion_cmd_pub_.publish(rover_motion_cmd_msg)
+            self.rover_motion_cmd_pub.publish(rover_motion_cmd_msg)
             self.get_logger().debug('ROVER_MOTION_CMD_MSG SENT!')
 
         ## PTU
-        if self.handle_axis(4) or self.handle_axis(5):
+        if self.continuous_data_streaming or self.axis_changed(4) or self.axis_changed(5):
             # Fill ptu_cmd message
             ptu_cmd_msg = Twist()
             ptu_cmd_msg.linear.x = 0.0
@@ -133,7 +138,7 @@ class GamepadParser(Node):
             ptu_cmd_msg.angular.y = data.axes[4] * self.ptu_pan_speed_ratio
             ptu_cmd_msg.angular.z = 0.0
 
-            self.ptu_cmd_pub_.publish(ptu_cmd_msg)
+            self.ptu_cmd_pub.publish(ptu_cmd_msg)
             self.get_logger().debug('PTU_CMD_MSG SENT!')
 
         self.prev_data = data
@@ -141,12 +146,30 @@ class GamepadParser(Node):
 
     # Add a call to the futures list, which is checked after each spin.
     def add_request_to_queue(self, request):
-        self.client_futures.append(self.change_locomotion_mode_cli_.call_async(self.request))
+        self.client_futures.append(self.change_locomotion_mode_cli.call_async(self.request))
 
 
     # Do something with the response of the service callback
     def parse_future_result(self, result):
         print(result.response)
+
+
+    # Check if a button was pressed by comparing it's current state to it's previous state
+    def button_pressed(self, index):
+        return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
+
+
+    # Check if a button from the supplied index selection is pressed.
+    def any_button_pressed(self, buttons_index):
+        for index in buttons_index:
+            if self.button_pressed(index):
+                return True
+        return False
+
+
+    # Compares current axis reading with previous axis reading
+    def axis_changed(self, index):
+        return self.prev_data.axes[index] != self.curr_data.axes[index]
 
 
     # Define custom spin function, that checks if the service calls resolved after each spin.
@@ -169,29 +192,6 @@ class GamepadParser(Node):
 
             # self.get_logger().warn('{} incomplete futures.'.format(len(incomplete_futures)))
             self.client_futures = incomplete_futures
-
-
-    # Check if a button was pressed by comparing it's current state to it's previous state
-    def button_pressed(self, index):
-        return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
-
-
-    # Check if a button from the supplied index selection is pressed.
-    def any_button_pressed(self, buttons_index):
-        for index in buttons_index:
-            if self.button_pressed(index):
-                return True
-        return False
-
-
-    # Compares current axis reading with previous axis reading
-    # Only applies if joystick is outside of the deadzone
-    def handle_axis(self, index):
-        # Check if data should be streamed at all times or only if it changed.
-        if self.continuous_data_streaming:
-            return abs(self.curr_data.axes[index]) >= self.deadzone
-        else:
-            return self.prev_data.axes[index] != self.curr_data.axes[index] and abs(self.curr_data.axes[index]) >= self.deadzone
 
     def stop(self):
         rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
