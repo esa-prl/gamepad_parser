@@ -1,7 +1,6 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch_helpers import get_ws_src_directory, add_namespace_to_yaml
-from ament_index_python.packages import get_package_share_directory, get_package_prefix
 
 import os
 
