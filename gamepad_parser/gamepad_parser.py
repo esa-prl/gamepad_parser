@@ -86,7 +86,12 @@ class GamepadParser(Node):
             self.get_logger().info('Y PRESSED')
 
             # Services requests are added to the service queue
-            self.request.new_locomotion_mode = 'TEST MODE'
+            self.request.new_locomotion_mode = 'wheel_walking_node'
+            self.add_request_to_queue(self.request)
+
+        if self.button_pressed(0): # X
+            self.get_logger().info('X PRESSED')
+            self.request.new_locomotion_mode = 'simple_rover_locomotion_node'
             self.add_request_to_queue(self.request)
 
         if self.button_pressed(8): # BACK Key
@@ -151,7 +156,7 @@ class GamepadParser(Node):
 
     # Do something with the response of the service callback
     def parse_future_result(self, result):
-        print(result.response)
+        print(result.success)
 
 
     # Check if a button was pressed by comparing it's current state to it's previous state
