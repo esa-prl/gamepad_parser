@@ -88,6 +88,10 @@ class GamepadParser(Node):
             self.request.new_locomotion_mode = 'wheel_walking_node'
             self.add_request_to_queue(self.request)
 
+        if self.button_pressed(2): # B
+            self.request.new_locomotion_mode = 'stop_mode_node'
+            self.add_request_to_queue(self.request)
+
         if self.button_pressed(0): # X
             # self.get_logger().info('X PRESSED')
             self.request.new_locomotion_mode = 'simple_rover_locomotion_node'
