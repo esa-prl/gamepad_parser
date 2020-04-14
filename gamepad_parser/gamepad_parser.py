@@ -59,7 +59,7 @@ class GamepadParser(Node):
 
         # Scaling with which the speed ratio can be changed during operations.
         # 0.1 = 10% increase, and reduction to 90% of previous value
-        self.speed_ratio_scaling = 0.1
+        self.speed_ratio_scaling = 0.3
 
         # Ratio from Joystick scalar to PTU pan and tilt
         self.ptu_pan_speed_ratio = 0.5
