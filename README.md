@@ -64,7 +64,7 @@ Maps gamepad inputs to rover velocities, PTU commands and locomotion mode change
 
 * **`/gamepad`** ([sensor_msgs/Joy])
 
-	The temperature measurements from which the average is computed.
+	Input of the buttons and joystick of a gamepad.	
 
 #### Published Topics
 
