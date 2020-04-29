@@ -7,8 +7,9 @@ from rover_msgs.srv import ChangeLocomotionMode
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 
+
 class GamepadParser(Node):
-## TODO: pass "allow undeclared parameters" making the parameter init easier
+    # TODO: pass "allow undeclared parameters" making the parameter init easier
 
     def __init__(self):
         # Init Node
@@ -21,17 +22,16 @@ class GamepadParser(Node):
         # Create Publishers
         self.rover_motion_cmd_pub = self.create_publisher(Twist, 'rover_motion_cmd', 10)
         self.ptu_cmd_pub = self.create_publisher(Twist, 'ptu_cmd', 10)
-        
+
         # Create Subscriptions
         self.create_subscription(Joy, 'gamepad', self.gamepad_callback, 10)
 
         # Request Locomotion Mode Service
-        self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode,'change_locomotion_mode')
+        self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode, 'change_locomotion_mode')
         self.request = ChangeLocomotionMode.Request()
         self.client_futures = []
- 
-        self.get_logger().info('\t{} STARTED.'.format(self.node_name.upper()))
 
+        self.get_logger().info('\t{} STARTED.'.format(self.node_name.upper()))
 
     def init_params(self):
         self.prev_data = Joy()
@@ -65,10 +65,9 @@ class GamepadParser(Node):
         self.ptu_pan_speed_ratio = 0.5
         self.ptu_tilt_speed_ratio = 0.5
 
-
     def gamepad_callback(self, data):
         self.curr_data = data
-        
+
         # Apply Deadzone to axis
         for index, axis in enumerate(self.curr_data.axes):
             # Sets axis value to 0 if it's
@@ -80,27 +79,27 @@ class GamepadParser(Node):
             self.prev_data = data
             return
 
-        ### HANDLE BUTTONS
-        ## Mode Requests
-        if self.button_pressed(3): # Y
+        # HANDLE BUTTONS
+        # Mode Requests
+        if self.button_pressed(3):  # Y
             # self.get_logger().info('Y PRESSED')
             # Services requests are added to the service queue
             self.request.new_locomotion_mode = 'wheel_walking_node'
             self.add_request_to_queue(self.request)
 
-        if self.button_pressed(2): # B
+        if self.button_pressed(2):  # B
             self.request.new_locomotion_mode = 'stop_mode_node'
             self.add_request_to_queue(self.request)
 
-        if self.button_pressed(0): # X
+        if self.button_pressed(0):  # X
             # self.get_logger().info('X PRESSED')
             self.request.new_locomotion_mode = 'simple_rover_locomotion_node'
             self.add_request_to_queue(self.request)
 
-        if self.button_pressed(8): # BACK Key
+        if self.button_pressed(8):  # BACK Key
             self.get_logger().info('BACK PRESSED - No functions')
 
-        ## Velocity Scaling
+        # Velocity Scaling
         # LB
         if self.button_pressed(4):
             # self.get_logger().info('LB PRESSED')
@@ -118,15 +117,15 @@ class GamepadParser(Node):
             # self.get_logger().info('RT PRESSED')
             self.angular_speed_ratio = self.angular_speed_ratio * (1 - self.speed_ratio_scaling)
 
-        ### HANDLE AXES
-        ## Steering
+        # HANDLE AXES
+        # Steering
         if self.continuous_data_streaming or self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
             rover_motion_cmd_msg.linear.x = data.axes[1] * self.linear_speed_ratio
-            rover_motion_cmd_msg.linear.y = data.axes[0]* self.linear_speed_ratio
+            rover_motion_cmd_msg.linear.y = data.axes[0] * self.linear_speed_ratio
             rover_motion_cmd_msg.linear.z = 0.0
-            
+
             rover_motion_cmd_msg.angular.x = 0.0
             rover_motion_cmd_msg.angular.y = 0.0
             rover_motion_cmd_msg.angular.z = data.axes[2] * self.angular_speed_ratio
@@ -134,14 +133,14 @@ class GamepadParser(Node):
             self.rover_motion_cmd_pub.publish(rover_motion_cmd_msg)
             self.get_logger().debug('ROVER_MOTION_CMD_MSG SENT!')
 
-        ## PTU
+        # PTU
         if self.continuous_data_streaming or self.axis_changed(4) or self.axis_changed(5):
             # Fill ptu_cmd message
             ptu_cmd_msg = Twist()
             ptu_cmd_msg.linear.x = 0.0
             ptu_cmd_msg.linear.y = 0.0
             ptu_cmd_msg.linear.z = 0.0
-            
+
             ptu_cmd_msg.angular.x = data.axes[5] * self.ptu_tilt_speed_ratio
             ptu_cmd_msg.angular.y = data.axes[4] * self.ptu_pan_speed_ratio
             ptu_cmd_msg.angular.z = 0.0
@@ -151,45 +150,39 @@ class GamepadParser(Node):
 
         self.prev_data = data
 
-
-    # Adds a call to the futures list, which is checked after each spin.
     def add_request_to_queue(self, request):
+        """ Adds a call to the futures list, which is checked after each spin. """
         self.client_futures.append(self.change_locomotion_mode_cli.call_async(self.request))
 
-
-    # Does something with the response of the service callback
     def parse_future_result(self, result):
+        """ Does something with the response of the service callback """
         if result.success:
             self.get_logger().debug('Locomotion mode change result received.')
         if not result.success:
             self.get_logger().warn('Locomotion mode change failed. Msg: {}.'.format(result.msg))
 
-
-    # Checks if a button was pressed by comparing it's current state to it's previous state
     def button_pressed(self, index):
+        """ Checks if a button was pressed by comparing it's current state to it's previous state """
         return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
 
-
-    # Checks if a button from the supplied index selection is pressed.
     def any_button_pressed(self, buttons_index):
+        """ Checks if a button from the supplied index selection is pressed. """
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
         return False
 
-
-    # Compares current axis reading with previous axis reading
     def axis_changed(self, index):
+        """ Compares current axis reading with previous axis reading """
         return self.prev_data.axes[index] != self.curr_data.axes[index]
 
-
-    # Defines custom spin function, that checks if the service calls resolved after each spin.
     def spin(self):
+        """ Defines custom spin function, that checks if the service calls resolved after each spin. """
         while rclpy.ok():
             rclpy.spin_once(self)
             # Necessary to call the services after the spin so they can resolve. If they don't, then they are added to a queue and tried the next time.
             incomplete_futures = []
-            
+
             for f in self.client_futures:
                 if f.done():
                     try:
@@ -207,7 +200,7 @@ class GamepadParser(Node):
             self.client_futures = incomplete_futures
 
     def stop(self):
-        rospy.loginfo("{} STOPPED.".format(self.node_name.upper()))
+        self.get_logger().info('\t{} STOPPED.'.format(self.node_name.upper()))
 
 
 def main(args=None):
@@ -215,15 +208,19 @@ def main(args=None):
 
     gamepad_parser = GamepadParser()
 
-    gamepad_parser.spin()
+    # Workaround since there is a bug in stopping python notes properly
+    try:
+        gamepad_parser.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        gamepad_parser.stop()
+        # Destroy the node explicitly
+        # (optional - otherwise it will be done automatically
+        # when the garbage collector destroys the node object)
+        gamepad_parser.destroy_node()
+        rclpy.shutdown()
 
-    # TODO: catch CTRL+C exception and close node gracefully.
-    gamepad_parser.stop()
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    gamepad_parser.destroy_node()
-    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
