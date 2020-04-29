@@ -150,40 +150,34 @@ class GamepadParser(Node):
 
         self.prev_data = data
 
-    # Adds a call to the futures list, which is checked after each spin.
-
     def add_request_to_queue(self, request):
+        """ Adds a call to the futures list, which is checked after each spin. """
         self.client_futures.append(self.change_locomotion_mode_cli.call_async(self.request))
 
-    # Does something with the response of the service callback
-
     def parse_future_result(self, result):
+        """ Does something with the response of the service callback """
         if result.success:
             self.get_logger().debug('Locomotion mode change result received.')
         if not result.success:
             self.get_logger().warn('Locomotion mode change failed. Msg: {}.'.format(result.msg))
 
-    # Checks if a button was pressed by comparing it's current state to it's previous state
-
     def button_pressed(self, index):
+        """ Checks if a button was pressed by comparing it's current state to it's previous state """
         return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
 
-    # Checks if a button from the supplied index selection is pressed.
-
     def any_button_pressed(self, buttons_index):
+        """ Checks if a button from the supplied index selection is pressed. """
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
         return False
 
-    # Compares current axis reading with previous axis reading
-
     def axis_changed(self, index):
+        """ Compares current axis reading with previous axis reading """
         return self.prev_data.axes[index] != self.curr_data.axes[index]
 
-    # Defines custom spin function, that checks if the service calls resolved after each spin.
-
     def spin(self):
+        """ Defines custom spin function, that checks if the service calls resolved after each spin. """
         while rclpy.ok():
             rclpy.spin_once(self)
             # Necessary to call the services after the spin so they can resolve. If they don't, then they are added to a queue and tried the next time.
@@ -214,6 +208,7 @@ def main(args=None):
 
     gamepad_parser = GamepadParser()
 
+    # Workaround since there is a bug in stopping python notes properly
     try:
         gamepad_parser.spin()
     except KeyboardInterrupt:
