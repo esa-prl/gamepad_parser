@@ -1,18 +1,21 @@
 #!/usr/bin/env python
 
+from geometry_msgs.msg import Twist
+
 import rclpy
 from rclpy.node import Node
+
 from rover_msgs.srv import ChangeLocomotionMode
 
-from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 
 
 class GamepadParser(Node):
-    # TODO: pass "allow undeclared parameters" making the parameter init easier
+    """Parse gamepad inputs."""
 
+    # TODO: pass "allow undeclared parameters" making the parameter init easier
     def __init__(self):
-        # Init Node
+        """Init Node."""
         self.node_name = 'gamepad_parser_node'
         super().__init__(self.node_name)
 
@@ -27,13 +30,15 @@ class GamepadParser(Node):
         self.create_subscription(Joy, 'gamepad', self.gamepad_callback, 10)
 
         # Request Locomotion Mode Service
-        self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode, 'change_locomotion_mode')
+        self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode,
+                                                             'change_locomotion_mode')
         self.request = ChangeLocomotionMode.Request()
         self.client_futures = []
 
         self.get_logger().info('\t{} STARTED.'.format(self.node_name.upper()))
 
     def init_params(self):
+        """Initialize Parameters."""
         self.prev_data = Joy()
 
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
@@ -44,13 +49,16 @@ class GamepadParser(Node):
         self.continuous_data_streaming = self.get_parameter('continuous_data_streaming').value
 
         # TODO: There should be a better way to have a default value
-        if self.deadzone == None:
+        if self.deadzone is None:
             self.deadzone = 0.2
-            self.get_logger().warn('Deadzone was not declared. Used default value {} instead.'.format(self.deadzone))
+            self.get_logger().warn(
+                'Deadzone was not declared. Used default value {} instead.'.format(self.deadzone))
 
-        if self.continuous_data_streaming == None:
+        if self.continuous_data_streaming is None:
             self.continuous_data_streaming = True
-            self.get_logger().warn('continuos_data_streaming was not declared. Used default value {} instead.'.format(self.continuous_data_streaming))
+            self.get_logger().warn(
+                'continuos_data_streaming was not declared. Used default value {} instead.'.format(
+                    self.continuous_data_streaming))
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
@@ -66,6 +74,7 @@ class GamepadParser(Node):
         self.ptu_tilt_speed_ratio = 0.5
 
     def gamepad_callback(self, data):
+        """Handle the messages received from the gamepad."""
         self.curr_data = data
 
         # Apply Deadzone to axis
@@ -119,7 +128,8 @@ class GamepadParser(Node):
 
         # HANDLE AXES
         # Steering
-        if self.continuous_data_streaming or self.axis_changed(0) or self.axis_changed(1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
+        if self.continuous_data_streaming or self.axis_changed(0) or self.axis_changed(
+                1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
             rover_motion_cmd_msg.linear.x = data.axes[1] * self.linear_speed_ratio
@@ -151,36 +161,38 @@ class GamepadParser(Node):
         self.prev_data = data
 
     def add_request_to_queue(self, request):
-        """ Adds a call to the futures list, which is checked after each spin. """
+        """Add a call to the futures list, which is checked after each spin."""
         self.client_futures.append(self.change_locomotion_mode_cli.call_async(self.request))
 
     def parse_future_result(self, result):
-        """ Does something with the response of the service callback """
+        """Do something with the response of the service callback."""
         if result.success:
             self.get_logger().debug('Locomotion mode change result received.')
         if not result.success:
             self.get_logger().warn('Locomotion mode change failed. Msg: {}.'.format(result.msg))
 
     def button_pressed(self, index):
-        """ Checks if a button was pressed by comparing it's current state to it's previous state """
-        return self.prev_data.buttons[index] != self.curr_data.buttons[index] and self.curr_data.buttons[index]
+        """Check if a button was pressed by comparing it's current state to it's previous state."""
+        return self.prev_data.buttons[index] != self.curr_data.buttons[
+            index] and self.curr_data.buttons[index]
 
     def any_button_pressed(self, buttons_index):
-        """ Checks if a button from the supplied index selection is pressed. """
+        """Check if a button from the supplied index selection is pressed."""
         for index in buttons_index:
             if self.button_pressed(index):
                 return True
         return False
 
     def axis_changed(self, index):
-        """ Compares current axis reading with previous axis reading """
+        """Compare current axis reading with previous axis reading."""
         return self.prev_data.axes[index] != self.curr_data.axes[index]
 
     def spin(self):
-        """ Defines custom spin function, that checks if the service calls resolved after each spin. """
+        """Check if the service calls resolved after each spin."""
         while rclpy.ok():
             rclpy.spin_once(self)
-            # Necessary to call the services after the spin so they can resolve. If they don't, then they are added to a queue and tried the next time.
+            # Necessary to call the services after the spin so they can resolve.
+            # If they don't, then they are added to a queue and tried the next time.
             incomplete_futures = []
 
             for f in self.client_futures:
@@ -188,7 +200,8 @@ class GamepadParser(Node):
                     try:
                         res = f.result()
                     except Exception as e:
-                        self.get_logger().warn('Service Call to ChangeLocomotionMode failed {}.'.format(e))
+                        self.get_logger().warn(
+                            'Service Call to ChangeLocomotionMode failed {}.'.format(e))
                     else:
                         self.parse_future_result(res)
                 else:
@@ -200,10 +213,12 @@ class GamepadParser(Node):
             self.client_futures = incomplete_futures
 
     def stop(self):
+        """Shut down method."""
         self.get_logger().info('\t{} STOPPED.'.format(self.node_name.upper()))
 
 
 def main(args=None):
+    """Run node."""
     rclpy.init(args=args)
 
     gamepad_parser = GamepadParser()
