@@ -42,23 +42,11 @@ class GamepadParser(Node):
         self.prev_data = Joy()
 
         # Percentage of deadzone in which no axis change is being considered. [0, 1]
-        self.declare_parameter('deadzone')
-        self.declare_parameter('continuous_data_streaming')
-
+        self.declare_parameter('deadzone', 0.2)
         self.deadzone = self.get_parameter('deadzone').value
+
+        self.declare_parameter('continuous_data_streaming', True)
         self.continuous_data_streaming = self.get_parameter('continuous_data_streaming').value
-
-        # TODO: There should be a better way to have a default value
-        if self.deadzone is None:
-            self.deadzone = 0.2
-            self.get_logger().warn(
-                'Deadzone was not declared. Used default value {} instead.'.format(self.deadzone))
-
-        if self.continuous_data_streaming is None:
-            self.continuous_data_streaming = True
-            self.get_logger().warn(
-                'continuos_data_streaming was not declared. Used default value {} instead.'.format(
-                    self.continuous_data_streaming))
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
