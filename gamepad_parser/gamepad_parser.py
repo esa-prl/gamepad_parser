@@ -2,8 +2,12 @@
 
 from geometry_msgs.msg import Twist
 
+from nav2_msgs.action import NavigateToPose
+
 import rclpy
+from rclpy.action import ActionClient
 from rclpy.node import Node
+
 
 from rover_msgs.srv import ChangeLocomotionMode
 
@@ -32,6 +36,10 @@ class GamepadParser(Node):
         # Request Locomotion Mode Service
         self.change_locomotion_mode_cli = self.create_client(ChangeLocomotionMode,
                                                              'change_locomotion_mode')
+
+        # Nav to Pose Action Client
+        self.nav_to_pose_cli = ActionClient(self, NavigateToPose, 'NavigateToPose')
+
         self.request = ChangeLocomotionMode.Request()
         self.client_futures = []
 
@@ -95,6 +103,7 @@ class GamepadParser(Node):
 
         if self.button_pressed(8):  # BACK Key
             self.get_logger().info('BACK PRESSED - No functions')
+            self.request_pose()
 
         # Velocity Scaling
         # LB
@@ -147,6 +156,20 @@ class GamepadParser(Node):
             self.get_logger().debug('PTU_CMD_MSG SENT!')
 
         self.prev_data = data
+
+    def request_pose(self):
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose.pose.position.x = 1.5
+        goal_msg.pose.pose.position.y = 0.5
+        goal_msg.pose.pose.position.z = 0.25
+        goal_msg.pose.pose.orientation.x = 0.0
+        goal_msg.pose.pose.orientation.y = 0.0
+        goal_msg.pose.pose.orientation.z = 0.0
+        goal_msg.pose.pose.orientation.w = 1.0
+
+        self.nav_to_pose_cli.wait_for_server()
+
+        self.nav_to_pose_cli.send_goal_async(goal_msg)
 
     def add_request_to_queue(self, request):
         """Add a call to the futures list, which is checked after each spin."""
