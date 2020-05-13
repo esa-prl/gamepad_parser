@@ -38,7 +38,7 @@ class GamepadParser(Node):
                                                              'change_locomotion_mode')
 
         # Nav to Pose Action Client
-        self.nav_to_pose_cli = ActionClient(self, NavigateToPose, 'NavigateToPose')
+        self.nav_to_pose_cli = ActionClient(self, NavigateToPose, 'navigate_to_pose')
 
         self.request = ChangeLocomotionMode.Request()
         self.client_futures = []
@@ -102,7 +102,7 @@ class GamepadParser(Node):
             self.add_request_to_queue(self.request)
 
         if self.button_pressed(8):  # BACK Key
-            self.get_logger().info('BACK PRESSED - No functions')
+            self.get_logger().info('BACK PRESSED - Requesting Pose')
             self.request_pose()
 
         # Velocity Scaling
