@@ -1,4 +1,3 @@
-# Nodename
 gamepad_parser_node:
   ros__parameters:
     deadzone: 0.3
