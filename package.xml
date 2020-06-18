@@ -7,8 +7,6 @@
   <maintainer email="miro.voellmy@esa.int">Miro Voellmy</maintainer>
   <license>TODO: License declaration</license>
 
-  <buildtool_depend>ament_python</buildtool_depend>
-
   <depend>simple_rover_locomotion</depend>
 
   <exec_depend>rclpy</exec_depend>
