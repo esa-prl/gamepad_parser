@@ -53,8 +53,13 @@ class GamepadParser(Node):
         self.declare_parameter('deadzone', 0.2)
         self.deadzone = self.get_parameter('deadzone').value
 
-        self.declare_parameter('continuous_data_streaming', True)
-        self.continuous_data_streaming = self.get_parameter('continuous_data_streaming').value
+        self.declare_parameter('continuous_data_streaming_locomotion', True)
+        self.continuous_data_streaming_locomotion = self.get_parameter(
+            'continuous_data_streaming_locomotion').value
+
+        self.declare_parameter('continuous_data_streaming_ptu', True)
+        self.continuous_data_streaming_ptu = self.get_parameter(
+            'continuous_data_streaming_ptu').value
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
@@ -125,7 +130,7 @@ class GamepadParser(Node):
 
         # HANDLE AXES
         # Steering
-        if self.continuous_data_streaming or self.axis_changed(0) or self.axis_changed(
+        if self.continuous_data_streaming_locomotion or self.axis_changed(0) or self.axis_changed(
                 1) or self.axis_changed(2) or self.any_button_pressed([4, 5, 6, 7]):
             # Fill rover_motion_cmd message
             rover_motion_cmd_msg = Twist()
@@ -141,16 +146,16 @@ class GamepadParser(Node):
             self.get_logger().debug('ROVER_MOTION_CMD_MSG SENT!')
 
         # PTU
-        if self.continuous_data_streaming or self.axis_changed(4) or self.axis_changed(5):
+        if self.continuous_data_streaming_ptu or self.axis_changed(4) or self.axis_changed(5):
             # Fill ptu_cmd message
             ptu_cmd_msg = Twist()
             ptu_cmd_msg.linear.x = 0.0
             ptu_cmd_msg.linear.y = 0.0
             ptu_cmd_msg.linear.z = 0.0
 
-            ptu_cmd_msg.angular.x = data.axes[5] * self.ptu_tilt_speed_ratio
-            ptu_cmd_msg.angular.y = data.axes[4] * self.ptu_pan_speed_ratio
-            ptu_cmd_msg.angular.z = 0.0
+            ptu_cmd_msg.angular.x = 0.0
+            ptu_cmd_msg.angular.y = data.axes[5] * self.ptu_tilt_speed_ratio
+            ptu_cmd_msg.angular.z = data.axes[4] * self.ptu_pan_speed_ratio
 
             self.ptu_cmd_pub.publish(ptu_cmd_msg)
             self.get_logger().debug('PTU_CMD_MSG SENT!')
