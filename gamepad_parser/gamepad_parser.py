@@ -180,7 +180,7 @@ class GamepadParser(Node):
         if result.success:
             self.get_logger().debug('Locomotion mode change result received.')
         if not result.success:
-            self.get_logger().warn('Locomotion mode change failed. Msg: {}.'.format(result.msg))
+            self.get_logger().warn('Locomotion mode change failed. Msg: {}.'.format(result.message))
 
     def button_pressed(self, index):
         """Check if a button was pressed by comparing it's current state to it's previous state."""
