@@ -1,4 +1,5 @@
 gamepad_parser_node:
   ros__parameters:
     deadzone: 0.3
-    continuous_data_streaming: False
+    continuous_data_streaming_locomotion: False
+    continuous_data_streaming_ptu: True
