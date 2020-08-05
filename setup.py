@@ -22,7 +22,7 @@ setup(
     maintainer='Miro Voellmy',
     maintainer_email='miro.voellmy@esa.int',
     description='Gamepad parser for PRL rovers',
-    license='TODO: License declaration',
+    license='GPLv3',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

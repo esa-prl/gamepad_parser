@@ -5,7 +5,7 @@
   <version>0.0.1</version>
   <description>Gamepad parser for PRL rovers</description>
   <maintainer email="miro.voellmy@esa.int">Miro Voellmy</maintainer>
-  <license>TODO: License declaration</license>
+  <license>GPLv3</license>
 
   <depend>simple_rover_locomotion</depend>
 
