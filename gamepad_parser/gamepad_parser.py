@@ -63,8 +63,8 @@ class GamepadParser(Node):
 
         # TODO: Find ratio that leads to realistic velocity values
         # Ratio from Joystick scalar to linear and angular velocities
-        self.linear_speed_ratio = 0.5
-        self.angular_speed_ratio = 0.5
+        self.linear_speed_ratio = 0.1
+        self.angular_speed_ratio = 0.1
 
         # Scaling with which the speed ratio can be changed during operations.
         # 0.1 = 10% increase, and reduction to 90% of previous value
